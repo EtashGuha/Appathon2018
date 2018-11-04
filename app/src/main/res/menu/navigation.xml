@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <item
+        android:id="@+id/back_button"
+        android:icon="@drawable/back_arrow"
+        android:iconTint="@color/colorPrimary"
+        />
+
+    <item
+        android:id="@+id/play_pause_button"
+        android:icon="@drawable/playbutton"
+        android:iconTint="@color/colorPrimary"
+        />
+
+
+    <item
+        android:id="@+id/next_arrow_button"
+        android:icon="@drawable/next_arrow"
+        android:iconTint="@color/colorPrimary"
+        />
+
+
+</menu>
