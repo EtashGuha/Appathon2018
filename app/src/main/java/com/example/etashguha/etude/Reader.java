@@ -17,11 +17,13 @@ public class Reader extends AppCompatActivity {
     PDFView pdfView;
     PausePlay pausePlayState = PausePlay.PLAYING;
     int pageNumber = 0;
-
+    Screenshot screenshot;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.reader);
+
+        screenshot = new Screenshot(this);
 
         final Uri uri = getIntent().getData();
 
@@ -50,6 +52,7 @@ public class Reader extends AppCompatActivity {
                             item.setIcon(R.drawable.playbutton);
                             pausePlayState = PausePlay.PLAYING;
                         }
+                        String s = screenshot.getBase64String();
                         return true;
                     case R.id.next_arrow_button:
                         pageNumber++;
