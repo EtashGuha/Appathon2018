@@ -69,6 +69,7 @@ public class Reader extends AppCompatActivity {
                             pausePlayState = PausePlay.PAUSED;
                             String encodedImage = screenshot.getBase64String();
                             String text = OCR.prepareForTTS(encodedImage);
+                            text = text.replaceAll("[^a-zA-Z0-9 .,]", "");
                             String readyForMediaPlayer = TTS.executePost(text);
                             player = new Player(readyForMediaPlayer);
                             player.startSpeaking();
