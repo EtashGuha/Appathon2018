@@ -1,5 +1,6 @@
 package com.example.etashguha.etude;
 
+import android.os.Message;
 import android.os.StrictMode;
 import android.util.Log;
 
@@ -17,11 +18,22 @@ import java.net.URL;
 
 import static android.os.StrictMode.setThreadPolicy;
 
-public class OCR {
+public class OCR extends Thread{
+
     public static String API_KEY = "AIzaSyAKtutaW6bmH036oB1t8ViQagm_-OItNLc";
     public static String targetURL = "https://vision.googleapis.com/v1/images:annotate?key=" + API_KEY;
+    public static Reader.MyHandler myHandler;
+    String encodedImage;
 
-    public static String prepareForTTS(String encodedImage){
+    public OCR(Reader.MyHandler myHandler, String encodedImage){
+        super();
+        this.myHandler = myHandler;
+        this.encodedImage = encodedImage;
+    }
+
+    @Override
+    public void run(){
+        Message msg = new Message();
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         setThreadPolicy(policy);
         String body = "{\n" +
@@ -75,18 +87,21 @@ public class OCR {
             JsonArray jsonArrayTwo = jsonObjectTwo.getAsJsonArray("textAnnotations");
             JsonObject jsonObjectThree = jsonArrayTwo.get(0).getAsJsonObject();
             String result = jsonObjectThree.get("description").getAsString();
-            Log.d("result", result);
             // decode json
             // decode base64
             // output is a wave file
-            return result;
+            msg.obj = result;
+            myHandler.sendMessage(msg);
+
         } catch (Exception e) {
             e.printStackTrace();
-            return "Fail";
+            msg.obj = "fail";
+            myHandler.sendMessage(msg);
 
         } finally {
             if (connection != null) {
                 connection.disconnect();
+                return;
             }
         }
     }

@@ -13,12 +13,20 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class TTS {
+public class TTS extends Thread{
     public static String API_KEY = "AIzaSyBUn126qSoVu_eGMiK8P_FFVrR0bFdPJ0E";
     //"AIzaSyCSomc9QfAYDy4UvLl_i_l36XPazS0jNro";
     public static String targetURL = "https://texttospeech.googleapis.com/v1/text:synthesize?key=" + API_KEY;
+    Reader.MyHandler myHandler;
+    String text;
 
-    public static String executePost(String text) {
+    public TTS(Reader.MyHandler myHandler, String text){
+        super();
+        this.myHandler = myHandler;
+        this.text = text;
+    }
+
+    public void run() {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
         String newtext = text.replaceAll("–","");

@@ -4,10 +4,13 @@ import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.os.StrictMode;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.TextView;
 
@@ -30,6 +33,8 @@ public class Reader extends AppCompatActivity {
     int pageNumber = 0;
     Screenshot screenshot;
     boolean firstTimePlaying;
+    MyHandler myHandler;
+    OCR ocr;
     Player player;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,9 +42,8 @@ public class Reader extends AppCompatActivity {
         setContentView(R.layout.reader);
 
         screenshot = new Screenshot(this);
-
         final Uri uri = getIntent().getData();
-
+        myHandler = new MyHandler(this);
         pdfView = findViewById(R.id.pdfView);
         firstTimePlaying = true;
 
@@ -58,7 +62,7 @@ public class Reader extends AppCompatActivity {
                             pageNumber--;
                             pdfView.fromUri(uri).pages(pageNumber).load();
                         }
-                        player = new Player("null");
+                        player.stopTalking();
                         firstTimePlaying = true;
                         return true;
                     case R.id.play_pause_button:
@@ -68,11 +72,12 @@ public class Reader extends AppCompatActivity {
                             firstTimePlaying = false;
                             pausePlayState = PausePlay.PAUSED;
                             String encodedImage = screenshot.getBase64String();
-                            String text = OCR.prepareForTTS(encodedImage);
-                            text = text.replaceAll("[^a-zA-Z0-9 .,]", "");
-                            String readyForMediaPlayer = TTS.executePost(text);
-                            player = new Player(readyForMediaPlayer);
-                            player.startSpeaking();
+                            ocr = new OCR(myHandler, encodedImage);
+                            ocr.start();
+                            //text = text.replaceAll("[^a-zA-Z0-9 .,\n]", " ");
+                            //String readyForMediaPlayer = TTS.executePost(text);
+                           // player = new Player(readyForMediaPlayer);
+                           // player.startSpeaking();
                         } else if(pausePlayState == PausePlay.PAUSED) {
                             item.setIcon(R.drawable.playbutton);
                             pausePlayState = PausePlay.PLAYING;
@@ -84,7 +89,7 @@ public class Reader extends AppCompatActivity {
                         }
                         return true;
                     case R.id.next_arrow_button:
-                        player = new Player("null");
+                        player.stopTalking();
                         firstTimePlaying = true;
                         pageNumber++;
                         pdfView.fromUri(uri).pages(pageNumber).load();
@@ -94,6 +99,23 @@ public class Reader extends AppCompatActivity {
             }
         });
     }
+
+    public static class MyHandler extends Handler {
+
+        private Reader parent;
+
+        public MyHandler(Reader parent) {
+            super();
+            this.parent = parent;
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            String m = (String)msg.obj;
+            Log.d("OCR", m);
+        }
+    }
+
 
     public enum PausePlay{
         PAUSED, PLAYING;
