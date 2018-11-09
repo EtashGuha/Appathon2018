@@ -28,4 +28,8 @@ public class Player {
     public void resumeSpeaking(){
         player.start();
     }
+
+    public void stopTalking(){
+        player.stop();
+    }
 }

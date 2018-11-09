@@ -3,15 +3,20 @@ package com.example.etashguha.etude;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.os.Message;
 import android.util.Base64;
 import android.view.View;
 import java.io.ByteArrayOutputStream;
 
-public class Screenshot {
+public class Screenshot extends Thread {
 
     Activity activity;
-    public Screenshot(Activity activity){
+    Reader.SSHandler ssHandler;
+    Message msg;
+
+    public Screenshot(Activity activity, Reader.SSHandler ssHandler){
         this.activity = activity;
+        this.ssHandler = ssHandler;
     }
 
     private static Bitmap takeScreenShot(Activity activity) {
@@ -40,8 +45,12 @@ public class Screenshot {
         return encoded;
     }
 
-    public String getBase64String(){
-        return bitmapToString(takeScreenShot(activity));
+    @Override
+    public void run(){
+        msg = new Message();
+        msg.obj = bitmapToString(takeScreenShot(activity));
+        ssHandler.sendMessage(msg);
+        return;
     }
 
 

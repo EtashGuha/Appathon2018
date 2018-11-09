@@ -1,48 +1,37 @@
 package com.example.etashguha.etude;
 
-import android.graphics.drawable.Drawable;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.os.StrictMode;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
-import android.widget.TextView;
-
 import com.github.barteksc.pdfviewer.PDFView;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-
-import static android.os.StrictMode.setThreadPolicy;
 
 public class Reader extends AppCompatActivity {
 
-    private TextView mTextMessage;
     PDFView pdfView;
     PausePlay pausePlayState = PausePlay.PLAYING;
     int pageNumber = 0;
     Screenshot screenshot;
     boolean firstTimePlaying;
+    Reader.SSHandler ssHandler;
     Player player;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.reader);
 
-        screenshot = new Screenshot(this);
-
+        ssHandler = new SSHandler();
+        screenshot = new Screenshot(this, ssHandler);
         final Uri uri = getIntent().getData();
-
         pdfView = findViewById(R.id.pdfView);
         firstTimePlaying = true;
-
 
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
@@ -58,21 +47,15 @@ public class Reader extends AppCompatActivity {
                             pageNumber--;
                             pdfView.fromUri(uri).pages(pageNumber).load();
                         }
-                        player = new Player("null");
+                        player.stopTalking();
                         firstTimePlaying = true;
                         return true;
                     case R.id.play_pause_button:
-                        System.out.println("jo");
                         if(pausePlayState == PausePlay.PLAYING && firstTimePlaying){
                             item.setIcon(R.drawable.pause_image);
                             firstTimePlaying = false;
                             pausePlayState = PausePlay.PAUSED;
-                            String encodedImage = screenshot.getBase64String();
-                            String text = OCR.prepareForTTS(encodedImage);
-                            text = text.replaceAll("[^a-zA-Z0-9 .,]", "");
-                            String readyForMediaPlayer = TTS.executePost(text);
-                            player = new Player(readyForMediaPlayer);
-                            player.startSpeaking();
+                            screenshot.run();
                         } else if(pausePlayState == PausePlay.PAUSED) {
                             item.setIcon(R.drawable.playbutton);
                             pausePlayState = PausePlay.PLAYING;
@@ -84,7 +67,7 @@ public class Reader extends AppCompatActivity {
                         }
                         return true;
                     case R.id.next_arrow_button:
-                        player = new Player("null");
+                        player.stopTalking();
                         firstTimePlaying = true;
                         pageNumber++;
                         pdfView.fromUri(uri).pages(pageNumber).load();
@@ -96,6 +79,57 @@ public class Reader extends AppCompatActivity {
     }
 
     public enum PausePlay{
-        PAUSED, PLAYING;
+        PAUSED, PLAYING
     }
+
+    public void createPlayer(String readyForMediaPlayer){
+        player = new Player(readyForMediaPlayer);
+        player.startSpeaking();
+    }
+
+    public class SSHandler extends Handler {
+
+        Reader.OCRHandler ocrHandler;
+        OCR ocr;
+
+        public SSHandler(){
+            super();
+            ocrHandler = new Reader.OCRHandler();
+        }
+
+        @Override
+        public void handleMessage(Message msg){
+            ocr = new OCR(ocrHandler, (String)msg.obj);
+            ocr.start();
+        }
+    }
+
+    public class OCRHandler extends Handler{
+        TTS tts;
+        Reader.TTSHandler ttsHandler;
+        public OCRHandler() {
+            super();
+            ttsHandler = new Reader.TTSHandler();
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            String ocrOutput = (String)msg.obj;
+            tts = new TTS(ttsHandler, ocrOutput);
+            tts.start();
+        }
+    }
+
+    public class TTSHandler extends Handler{
+
+        public TTSHandler(){
+            super();
+        }
+
+        @Override
+        public void handleMessage(Message msg){
+            createPlayer((String)msg.obj);
+        }
+    }
+
 }
