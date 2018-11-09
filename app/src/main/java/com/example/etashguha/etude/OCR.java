@@ -2,7 +2,6 @@ package com.example.etashguha.etude;
 
 import android.os.Message;
 import android.os.StrictMode;
-import android.util.Log;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -22,12 +21,12 @@ public class OCR extends Thread{
 
     public static String API_KEY = "AIzaSyAKtutaW6bmH036oB1t8ViQagm_-OItNLc";
     public static String targetURL = "https://vision.googleapis.com/v1/images:annotate?key=" + API_KEY;
-    public static Reader.MyHandler myHandler;
+    public static Reader.OCRHandler ocrHandler;
     String encodedImage;
 
-    public OCR(Reader.MyHandler myHandler, String encodedImage){
+    public OCR(Reader.OCRHandler ocrHandler, String encodedImage){
         super();
-        this.myHandler = myHandler;
+        OCR.ocrHandler = ocrHandler;
         this.encodedImage = encodedImage;
     }
 
@@ -91,12 +90,12 @@ public class OCR extends Thread{
             // decode base64
             // output is a wave file
             msg.obj = result;
-            myHandler.sendMessage(msg);
+            ocrHandler.sendMessage(msg);
 
         } catch (Exception e) {
             e.printStackTrace();
             msg.obj = "fail";
-            myHandler.sendMessage(msg);
+            ocrHandler.sendMessage(msg);
 
         } finally {
             if (connection != null) {

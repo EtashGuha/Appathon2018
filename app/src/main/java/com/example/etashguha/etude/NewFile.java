@@ -6,10 +6,8 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Toast;
 
-import java.net.URISyntaxException;
 
 public class NewFile extends AppCompatActivity {
 
@@ -60,7 +58,7 @@ public class NewFile extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    public static String getPath(Context context, Uri uri) throws URISyntaxException {
+    public static String getPath(Context context, Uri uri) {
         if ("content".equalsIgnoreCase(uri.getScheme())) {
             String[] projection = { "_data" };
             Cursor cursor = null;

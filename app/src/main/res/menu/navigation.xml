@@ -14,12 +14,9 @@
         android:iconTint="@color/colorPrimary"
         />
 
-
     <item
         android:id="@+id/next_arrow_button"
         android:icon="@drawable/next_arrow"
         android:iconTint="@color/colorPrimary"
         />
-
-
 </menu>
