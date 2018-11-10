@@ -19,15 +19,18 @@ public class TTS extends Thread{
     final private static String targetURL = "https://texttospeech.googleapis.com/v1/text:synthesize?key=" + API_KEY;
     Reader.TTSHandler ttsHandler;
     String text;
+    int pageNumber;
 
-    public TTS(Reader.TTSHandler ttsHandler, String text){
+    public TTS(Reader.TTSHandler ttsHandler, String text, int pageNumber){
         super();
         this.ttsHandler = ttsHandler;
         this.text = text;
+        this.pageNumber = pageNumber;
     }
 
     public void run() {
         Message msg = new Message();
+        msg.what = pageNumber;
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
         String newtext = text.replaceAll("[^a-zA-Z0-9 .,\n]", " ");

@@ -23,16 +23,19 @@ public class OCR extends Thread{
     public static String targetURL = "https://vision.googleapis.com/v1/images:annotate?key=" + API_KEY;
     public static Reader.OCRHandler ocrHandler;
     String encodedImage;
+    int pageNumber;
 
-    public OCR(Reader.OCRHandler ocrHandler, String encodedImage){
+    public OCR(Reader.OCRHandler ocrHandler, String encodedImage, int pageNumber){
         super();
         OCR.ocrHandler = ocrHandler;
         this.encodedImage = encodedImage;
+        this.pageNumber = pageNumber;
     }
 
     @Override
     public void run(){
         Message msg = new Message();
+        msg.what = pageNumber;
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         setThreadPolicy(policy);
         String body = "{\n" +

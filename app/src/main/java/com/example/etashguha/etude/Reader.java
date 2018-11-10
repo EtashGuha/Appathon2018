@@ -1,5 +1,6 @@
 package com.example.etashguha.etude;
 
+import android.app.Activity;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,7 +21,7 @@ import com.github.barteksc.pdfviewer.PDFView;
 public class Reader extends AppCompatActivity {
 
     PDFView pdfView;
-    PausePlay pausePlayState = PausePlay.PLAYING;
+    PausePlay pausePlayState = PausePlay.PAUSED;
     int pageNumber = 0;
     Screenshot screenshot;
     boolean firstTimePlaying;
@@ -28,14 +29,15 @@ public class Reader extends AppCompatActivity {
     Player player;
     BottomNavigationView bottomNavigationView;
     ProgressBar progBar;
+    Activity baseActivity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.reader);
 
-        ssHandler = new SSHandler();
-        screenshot = new Screenshot(this, ssHandler);
+        baseActivity = this;
+        player = new Player("");
         final Uri uri = getIntent().getData();
         pdfView = findViewById(R.id.pdfView);
         progBar = findViewById(R.id.progressBar);
@@ -56,22 +58,29 @@ public class Reader extends AppCompatActivity {
                             pdfView.fromUri(uri).pages(pageNumber).load();
                         }
                         player.stopTalking();
+                        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setIcon(R.drawable.playbutton);
                         firstTimePlaying = true;
+                        pausePlayState = PausePlay.PAUSED;
+                        progBar.setVisibility(View.INVISIBLE);
+                        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
                         return true;
                     case R.id.play_pause_button:
-                        if(pausePlayState == PausePlay.PLAYING && firstTimePlaying){
-                            item.setVisible(false);
+                        if(pausePlayState == PausePlay.PAUSED && firstTimePlaying){
                             progBar.setVisibility(View.VISIBLE);
+                            item.setEnabled(false);
+                            item.setIcon(R.drawable.pause_image);
                             firstTimePlaying = false;
-                            pausePlayState = PausePlay.PAUSED;
-                            screenshot.run();
-                        } else if(pausePlayState == PausePlay.PAUSED) {
-                            item.setIcon(R.drawable.playbutton);
                             pausePlayState = PausePlay.PLAYING;
+                            ssHandler = new SSHandler();
+                            screenshot = new Screenshot(baseActivity, ssHandler, pageNumber);
+                            screenshot.run();
+                        } else if(pausePlayState == PausePlay.PLAYING) {
+                            item.setIcon(R.drawable.playbutton);
+                            pausePlayState = PausePlay.PAUSED;
                             player.pauseSpeaking();
                         } else {
                             item.setIcon(R.drawable.pause_image);
-                            pausePlayState = PausePlay.PAUSED;
+                            pausePlayState = PausePlay.PLAYING;
                             player.resumeSpeaking();
                         }
                         return true;
@@ -80,6 +89,10 @@ public class Reader extends AppCompatActivity {
                         firstTimePlaying = true;
                         pageNumber++;
                         pdfView.fromUri(uri).pages(pageNumber).load();
+                        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setIcon(R.drawable.playbutton);
+                        pausePlayState = PausePlay.PAUSED;
+                        progBar.setVisibility(View.INVISIBLE);
+                        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
                         return true;
                 }
                 return false;
@@ -108,8 +121,10 @@ public class Reader extends AppCompatActivity {
 
         @Override
         public void handleMessage(Message msg){
-            ocr = new OCR(ocrHandler, (String)msg.obj);
-            ocr.start();
+            if(msg.what == pageNumber) {
+                ocr = new OCR(ocrHandler, (String) msg.obj, msg.what);
+                ocr.start();
+            }
         }
     }
 
@@ -123,13 +138,16 @@ public class Reader extends AppCompatActivity {
 
         @Override
         public void handleMessage(Message msg) {
-            String ocrOutput = (String)msg.obj;
-            tts = new TTS(ttsHandler, ocrOutput);
-            tts.start();
+            if(msg.what == pageNumber) {
+                String ocrOutput = (String) msg.obj;
+                tts = new TTS(ttsHandler, ocrOutput, msg.what);
+                tts.start();
+            }
         }
     }
 
     public class TTSHandler extends Handler{
+
 
         public TTSHandler(){
             super();
@@ -137,10 +155,11 @@ public class Reader extends AppCompatActivity {
 
         @Override
         public void handleMessage(Message msg){
-            bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setIcon(R.drawable.pause_image);
-            progBar.setVisibility(View.INVISIBLE);
-            bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setVisible(true);
-            createPlayer((String)msg.obj);
+            if(msg.what == pageNumber) {
+                progBar.setVisibility(View.INVISIBLE);
+                bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
+                createPlayer((String) msg.obj);
+            }
         }
     }
 
