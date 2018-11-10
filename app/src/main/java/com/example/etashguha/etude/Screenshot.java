@@ -52,7 +52,4 @@ public class Screenshot extends Thread {
         ssHandler.sendMessage(msg);
         return;
     }
-
-
-
 }

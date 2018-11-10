@@ -6,6 +6,7 @@
         android:id="@+id/back_button"
         android:icon="@drawable/back_arrow"
         android:iconTint="@color/colorPrimary"
+        
         />
 
     <item

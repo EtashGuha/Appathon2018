@@ -8,7 +8,12 @@ import android.os.StrictMode;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ProgressBar;
+
 import com.github.barteksc.pdfviewer.PDFView;
 
 
@@ -21,6 +26,8 @@ public class Reader extends AppCompatActivity {
     boolean firstTimePlaying;
     Reader.SSHandler ssHandler;
     Player player;
+    BottomNavigationView bottomNavigationView;
+    ProgressBar progBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,14 +38,15 @@ public class Reader extends AppCompatActivity {
         screenshot = new Screenshot(this, ssHandler);
         final Uri uri = getIntent().getData();
         pdfView = findViewById(R.id.pdfView);
+        progBar = findViewById(R.id.progressBar);
+        progBar.setVisibility(View.INVISIBLE);
         firstTimePlaying = true;
-
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
 
         pdfView.fromUri(uri).pages(pageNumber).load();
-        final BottomNavigationView navigation = findViewById(R.id.navigation);
-        navigation.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+        bottomNavigationView = findViewById(R.id.bottomNavigation);
+        bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 switch (item.getItemId()) {
@@ -52,7 +60,8 @@ public class Reader extends AppCompatActivity {
                         return true;
                     case R.id.play_pause_button:
                         if(pausePlayState == PausePlay.PLAYING && firstTimePlaying){
-                            item.setIcon(R.drawable.pause_image);
+                            item.setVisible(false);
+                            progBar.setVisibility(View.VISIBLE);
                             firstTimePlaying = false;
                             pausePlayState = PausePlay.PAUSED;
                             screenshot.run();
@@ -128,6 +137,9 @@ public class Reader extends AppCompatActivity {
 
         @Override
         public void handleMessage(Message msg){
+            bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setIcon(R.drawable.pause_image);
+            progBar.setVisibility(View.INVISIBLE);
+            bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setVisible(true);
             createPlayer((String)msg.obj);
         }
     }
