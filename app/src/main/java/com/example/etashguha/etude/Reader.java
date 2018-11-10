@@ -9,8 +9,6 @@ import android.os.StrictMode;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -57,12 +55,7 @@ public class Reader extends AppCompatActivity {
                             pageNumber--;
                             pdfView.fromUri(uri).pages(pageNumber).load();
                         }
-                        player.stopTalking();
-                        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setIcon(R.drawable.playbutton);
-                        firstTimePlaying = true;
-                        pausePlayState = PausePlay.PAUSED;
-                        progBar.setVisibility(View.INVISIBLE);
-                        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
+                        sideButtonReset();
                         return true;
                     case R.id.play_pause_button:
                         if(pausePlayState == PausePlay.PAUSED && firstTimePlaying){
@@ -85,19 +78,22 @@ public class Reader extends AppCompatActivity {
                         }
                         return true;
                     case R.id.next_arrow_button:
-                        player.stopTalking();
-                        firstTimePlaying = true;
                         pageNumber++;
                         pdfView.fromUri(uri).pages(pageNumber).load();
-                        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setIcon(R.drawable.playbutton);
-                        pausePlayState = PausePlay.PAUSED;
-                        progBar.setVisibility(View.INVISIBLE);
-                        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
-                        return true;
+                        sideButtonReset();
                 }
                 return false;
             }
         });
+    }
+
+    public void sideButtonReset(){
+        player.stopTalking();
+        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setIcon(R.drawable.playbutton);
+        firstTimePlaying = true;
+        pausePlayState = PausePlay.PAUSED;
+        progBar.setVisibility(View.INVISIBLE);
+        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
     }
 
     public enum PausePlay{
@@ -129,8 +125,10 @@ public class Reader extends AppCompatActivity {
     }
 
     public class OCRHandler extends Handler{
+
         TTS tts;
         Reader.TTSHandler ttsHandler;
+
         public OCRHandler() {
             super();
             ttsHandler = new Reader.TTSHandler();
@@ -148,7 +146,6 @@ public class Reader extends AppCompatActivity {
 
     public class TTSHandler extends Handler{
 
-
         public TTSHandler(){
             super();
         }
@@ -162,5 +159,4 @@ public class Reader extends AppCompatActivity {
             }
         }
     }
-
 }
