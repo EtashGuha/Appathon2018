@@ -13,10 +13,12 @@ public class Screenshot extends Thread {
     Activity activity;
     Reader.SSHandler ssHandler;
     Message msg;
+    int pageNumber;
 
-    public Screenshot(Activity activity, Reader.SSHandler ssHandler){
+    public Screenshot(Activity activity, Reader.SSHandler ssHandler, int pageNumber){
         this.activity = activity;
         this.ssHandler = ssHandler;
+        this.pageNumber = pageNumber;
     }
 
     private static Bitmap takeScreenShot(Activity activity) {
@@ -49,10 +51,8 @@ public class Screenshot extends Thread {
     public void run(){
         msg = new Message();
         msg.obj = bitmapToString(takeScreenShot(activity));
+        msg.what = pageNumber;
         ssHandler.sendMessage(msg);
         return;
     }
-
-
-
 }

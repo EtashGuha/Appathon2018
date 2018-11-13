@@ -1,5 +1,6 @@
 package com.example.etashguha.etude;
 
+import android.app.Activity;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -9,36 +10,43 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ProgressBar;
+
 import com.github.barteksc.pdfviewer.PDFView;
 
 
 public class Reader extends AppCompatActivity {
 
     PDFView pdfView;
-    PausePlay pausePlayState = PausePlay.PLAYING;
+    PausePlay pausePlayState = PausePlay.PAUSED;
     int pageNumber = 0;
     Screenshot screenshot;
     boolean firstTimePlaying;
     Reader.SSHandler ssHandler;
     Player player;
+    BottomNavigationView bottomNavigationView;
+    ProgressBar progBar;
+    Activity baseActivity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.reader);
 
-        ssHandler = new SSHandler();
-        screenshot = new Screenshot(this, ssHandler);
+        baseActivity = this;
+        player = new Player("");
         final Uri uri = getIntent().getData();
         pdfView = findViewById(R.id.pdfView);
+        progBar = findViewById(R.id.progressBar);
+        progBar.setVisibility(View.INVISIBLE);
         firstTimePlaying = true;
-
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
 
         pdfView.fromUri(uri).pages(pageNumber).load();
-        final BottomNavigationView navigation = findViewById(R.id.navigation);
-        navigation.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+        bottomNavigationView = findViewById(R.id.bottomNavigation);
+        bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 switch (item.getItemId()) {
@@ -47,35 +55,45 @@ public class Reader extends AppCompatActivity {
                             pageNumber--;
                             pdfView.fromUri(uri).pages(pageNumber).load();
                         }
-                        player.stopTalking();
-                        firstTimePlaying = true;
+                        sideButtonReset();
                         return true;
                     case R.id.play_pause_button:
-                        if(pausePlayState == PausePlay.PLAYING && firstTimePlaying){
+                        if(pausePlayState == PausePlay.PAUSED && firstTimePlaying){
+                            progBar.setVisibility(View.VISIBLE);
+                            item.setEnabled(false);
                             item.setIcon(R.drawable.pause_image);
                             firstTimePlaying = false;
-                            pausePlayState = PausePlay.PAUSED;
-                            screenshot.run();
-                        } else if(pausePlayState == PausePlay.PAUSED) {
-                            item.setIcon(R.drawable.playbutton);
                             pausePlayState = PausePlay.PLAYING;
+                            ssHandler = new SSHandler();
+                            screenshot = new Screenshot(baseActivity, ssHandler, pageNumber);
+                            screenshot.run();
+                        } else if(pausePlayState == PausePlay.PLAYING) {
+                            item.setIcon(R.drawable.playbutton);
+                            pausePlayState = PausePlay.PAUSED;
                             player.pauseSpeaking();
                         } else {
                             item.setIcon(R.drawable.pause_image);
-                            pausePlayState = PausePlay.PAUSED;
+                            pausePlayState = PausePlay.PLAYING;
                             player.resumeSpeaking();
                         }
                         return true;
                     case R.id.next_arrow_button:
-                        player.stopTalking();
-                        firstTimePlaying = true;
                         pageNumber++;
                         pdfView.fromUri(uri).pages(pageNumber).load();
-                        return true;
+                        sideButtonReset();
                 }
                 return false;
             }
         });
+    }
+
+    public void sideButtonReset(){
+        player.stopTalking();
+        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setIcon(R.drawable.playbutton);
+        firstTimePlaying = true;
+        pausePlayState = PausePlay.PAUSED;
+        progBar.setVisibility(View.INVISIBLE);
+        bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
     }
 
     public enum PausePlay{
@@ -99,14 +117,18 @@ public class Reader extends AppCompatActivity {
 
         @Override
         public void handleMessage(Message msg){
-            ocr = new OCR(ocrHandler, (String)msg.obj);
-            ocr.start();
+            if(msg.what == pageNumber) {
+                ocr = new OCR(ocrHandler, (String) msg.obj, msg.what);
+                ocr.start();
+            }
         }
     }
 
     public class OCRHandler extends Handler{
+
         TTS tts;
         Reader.TTSHandler ttsHandler;
+
         public OCRHandler() {
             super();
             ttsHandler = new Reader.TTSHandler();
@@ -114,9 +136,11 @@ public class Reader extends AppCompatActivity {
 
         @Override
         public void handleMessage(Message msg) {
-            String ocrOutput = (String)msg.obj;
-            tts = new TTS(ttsHandler, ocrOutput);
-            tts.start();
+            if(msg.what == pageNumber) {
+                String ocrOutput = (String) msg.obj;
+                tts = new TTS(ttsHandler, ocrOutput, msg.what);
+                tts.start();
+            }
         }
     }
 
@@ -128,8 +152,11 @@ public class Reader extends AppCompatActivity {
 
         @Override
         public void handleMessage(Message msg){
-            createPlayer((String)msg.obj);
+            if(msg.what == pageNumber) {
+                progBar.setVisibility(View.INVISIBLE);
+                bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
+                createPlayer((String) msg.obj);
+            }
         }
     }
-
 }
