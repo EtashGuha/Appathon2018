@@ -9,6 +9,7 @@ import android.os.StrictMode;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -21,9 +22,11 @@ public class Reader extends AppCompatActivity {
     PDFView pdfView;
     PausePlay pausePlayState = PausePlay.PAUSED;
     int pageNumber = 0;
+    Dictionary dictionary;
     Screenshot screenshot;
     boolean firstTimePlaying;
-    Reader.SSHandler ssHandler;
+    SSHandler ssHandler;
+    DictionaryHandler dictionaryHandler;
     Player player;
     BottomNavigationView bottomNavigationView;
     ProgressBar progBar;
@@ -41,10 +44,15 @@ public class Reader extends AppCompatActivity {
         progBar = findViewById(R.id.progressBar);
         progBar.setVisibility(View.INVISIBLE);
         firstTimePlaying = true;
+        dictionaryHandler = new DictionaryHandler();
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
 
+
         pdfView.fromUri(uri).pages(pageNumber).load();
+        dictionaryHandler = new DictionaryHandler();
+        dictionary = new Dictionary(baseActivity, dictionaryHandler, "Chicken");
+        dictionary.run();
         bottomNavigationView = findViewById(R.id.bottomNavigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -157,6 +165,18 @@ public class Reader extends AppCompatActivity {
                 bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
                 createPlayer((String) msg.obj);
             }
+        }
+    }
+
+    public class DictionaryHandler extends Handler{
+
+        public DictionaryHandler(){
+            super();
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            Log.d("MainActivity", "response: " + msg.obj);
         }
     }
 }
