@@ -7,12 +7,14 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.StrictMode;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -26,7 +28,6 @@ public class Reader extends AppCompatActivity {
     PDFView pdfView;
     PausePlay pausePlayState;
     int pageNumber = 0;
-    Dictionary dictionary;
     Screenshot screenshot;
     boolean firstTimePlaying;
     SSHandler ssHandler;
@@ -36,7 +37,10 @@ public class Reader extends AppCompatActivity {
     ProgressBar progBar;
     Activity baseActivity;
     TextView definition;
+    ConstraintLayout baseLayout;
     BottomSheetBehavior behavior;
+    CoordinatorLayout coordinatorLayout;
+    View bottomSheet;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,8 +51,9 @@ public class Reader extends AppCompatActivity {
         progBar = findViewById(R.id.progressBar);
         definition = findViewById(R.id.definition);
         progBar.setVisibility(View.INVISIBLE);
-        CoordinatorLayout coordinatorLayout = findViewById(R.id.main_content);
-        View bottomSheet = coordinatorLayout.findViewById(R.id.bottom_sheet);
+        coordinatorLayout = findViewById(R.id.main_content);
+        bottomSheet = coordinatorLayout.findViewById(R.id.bottom_sheet);
+        baseLayout = findViewById(R.id.container);
 
         baseActivity = this;
         player = new Player("");
@@ -59,7 +64,7 @@ public class Reader extends AppCompatActivity {
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
 
-         behavior = BottomSheetBehavior.from(bottomSheet);
+        behavior = BottomSheetBehavior.from(bottomSheet);
         behavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
@@ -70,6 +75,14 @@ public class Reader extends AppCompatActivity {
             public void onSlide(@NonNull View bottomSheet, float slideOffset) {
                 // React to dragging events
                 Log.e("onSlide", "onSlide");
+            }
+        });
+
+        baseLayout.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                Log.d("coordinates", event.getX() + " " + event.getY());
+                return false;
             }
         });
 
@@ -114,8 +127,6 @@ public class Reader extends AppCompatActivity {
                         pageNumber++;
                         pdfView.fromUri(uri).pages(pageNumber).load();
                         sideButtonReset();
-                        dictionary = new Dictionary(baseActivity, dictionaryHandler, "Chicken");
-                        dictionary.run();
                 }
                 return false;
             }
