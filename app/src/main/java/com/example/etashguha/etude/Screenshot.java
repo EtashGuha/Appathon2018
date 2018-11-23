@@ -2,6 +2,9 @@ package com.example.etashguha.etude;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Message;
 import android.util.Base64;
@@ -33,26 +36,32 @@ public class Screenshot extends Thread {
         //Find the screen dimensions to create bitmap in the same size.
         int width = activity.getWindowManager().getDefaultDisplay().getWidth();
         int height = activity.getWindowManager().getDefaultDisplay().getHeight();
-
         Bitmap b = Bitmap.createBitmap(b1, 0, statusBarHeight, width, height - statusBarHeight);
         view.destroyDrawingCache();
         return b;
     }
-
-    private String bitmapToString(Bitmap bitmap){
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
-        byte[] byteArray = byteArrayOutputStream .toByteArray();
-        String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
-        return encoded;
-    }
+//    private String bitmapToString(Bitmap bitmap){
+//        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+//        byte[] byteArray = byteArrayOutputStream .toByteArray();
+//        String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
+//        return encoded;
+//    }
+//
+//    private byte[] bitmapToByteArray (Bitmap bitmap) {
+//        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+//        byte[] byteArray = byteArrayOutputStream .toByteArray();
+//        return byteArray;
+//    }
 
     @Override
     public void run(){
         msg = new Message();
-        msg.obj = bitmapToString(takeScreenShot(activity));
+        Bitmap b = takeScreenShot(activity);
+        msg.obj = b;
         msg.what = pageNumber;
-        ssHandler.sendMessage(msg);
+        ssHandler.sendMessage(msg); //passes the bitmap to the reader
         return;
     }
 }

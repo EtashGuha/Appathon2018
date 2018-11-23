@@ -1,6 +1,7 @@
 package com.example.etashguha.etude;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -118,7 +119,7 @@ public class Reader extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg){
             if(msg.what == pageNumber) {
-                ocr = new OCR(ocrHandler, (String) msg.obj, msg.what);
+                ocr = new OCR(ocrHandler, (Bitmap) msg.obj, msg.what);
                 ocr.start();
             }
         }

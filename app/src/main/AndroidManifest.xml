@@ -23,6 +23,9 @@
             android:name=".Reader"
             android:label="@string/title_activity_main2" />
         <activity android:name=".NewFile"></activity>
+        <meta-data
+            android:name="com.google.firebase.ml.vision.DEPENDENCIES"
+            android:value="ocr" />
     </application>
 
 </manifest>
