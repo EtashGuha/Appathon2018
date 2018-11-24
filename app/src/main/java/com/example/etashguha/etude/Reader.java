@@ -1,5 +1,6 @@
 package com.example.etashguha.etude;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -10,11 +11,19 @@ import android.os.StrictMode;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ProgressBar;
 
 import com.github.barteksc.pdfviewer.PDFView;
+import com.google.firebase.ml.vision.document.FirebaseVisionDocumentText;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class Reader extends AppCompatActivity {
@@ -28,8 +37,11 @@ public class Reader extends AppCompatActivity {
     Player player;
     BottomNavigationView bottomNavigationView;
     ProgressBar progBar;
+    HashMap<String,String> coodinatesToWord;
+    KDTree coordinates;
     Activity baseActivity;
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,7 +56,19 @@ public class Reader extends AppCompatActivity {
         firstTimePlaying = true;
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
-
+        pdfView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int x = (int)event.getX();
+                int y = (int)event.getY();
+                double [] coordinate = new double [2];
+                coordinate[0] = x;
+                coordinate[1] = y;
+                KDNode nearestWord = coordinates.find_nearest(coordinate);
+                String key = (int)nearestWord.x[0] + " " + (int)nearestWord.x[1];
+                return false;
+            }
+        });
         pdfView.fromUri(uri).pages(pageNumber).load();
         bottomNavigationView = findViewById(R.id.bottomNavigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -101,8 +125,8 @@ public class Reader extends AppCompatActivity {
         PAUSED, PLAYING
     }
 
-    public void createPlayer(String readyForMediaPlayer){
-        player = new Player(readyForMediaPlayer);
+    public void createPlayer(String outputstring){
+        player = new Player(outputstring);
         player.startSpeaking();
     }
 
@@ -138,9 +162,44 @@ public class Reader extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg) {
             if(msg.what == pageNumber) {
-                String ocrOutput = (String) msg.obj;
-                tts = new TTS(ttsHandler, ocrOutput, msg.what);
+                coodinatesToWord = new HashMap<>();
+                List<FirebaseVisionDocumentText.Block> blocks = ((FirebaseVisionDocumentText)msg.obj).getBlocks();
+                ArrayList<FirebaseVisionDocumentText.Word> words = new ArrayList<FirebaseVisionDocumentText.Word>();
+                ArrayList<Integer> xValues = new ArrayList<>();
+                ArrayList<Integer> yValues = new ArrayList<>();
+                int maxHeight = 0;
+                FirebaseVisionDocumentText.Block maxBlock = null;
+                for(FirebaseVisionDocumentText.Block block: blocks) {
+                    if (block.getBoundingBox().height() > maxHeight) {
+                        maxBlock = block;
+                        maxHeight = block.getBoundingBox().height();
+                    }
+                }
+                String outputstring = maxBlock.getText();
+                tts = new TTS(ttsHandler, outputstring, msg.what);
                 tts.start();
+
+                for(int blockIndex = 0; blockIndex < blocks.size(); blockIndex++){
+                    for(int paragraphIndex = 0; paragraphIndex < blocks.get(blockIndex).getParagraphs().size(); paragraphIndex++){
+                        for(int wordIndex = 0; wordIndex < blocks.get(blockIndex).getParagraphs().get(paragraphIndex).getWords().size(); wordIndex++){
+                            xValues.add(blocks.get(blockIndex).getParagraphs().get(paragraphIndex).getWords().get(wordIndex).getBoundingBox().centerX());
+                            yValues.add(blocks.get(blockIndex).getParagraphs().get(paragraphIndex).getWords().get(wordIndex).getBoundingBox().centerY());
+                            words.add(blocks.get(blockIndex).getParagraphs().get(paragraphIndex).getWords().get(wordIndex));
+                        }
+                    }
+                }
+                coordinates = new KDTree(words.size());
+                for(int i = 0; i < words.size(); i++){
+                    double [] coordinate = new double[2];
+                    coordinate[0] = xValues.get(i);
+                    coordinate[1] = yValues.get(i);
+                    String key = xValues.get(i) + " " + yValues.get(i);
+                    coodinatesToWord.put(key, words.get(i).getText());
+                    coordinates.add(coordinate);
+                    Log.d("banana", key + " " + words.get(i).getText());
+                }
+
+                progBar.setVisibility(View.INVISIBLE);
             }
         }
     }
@@ -156,7 +215,7 @@ public class Reader extends AppCompatActivity {
             if(msg.what == pageNumber) {
                 progBar.setVisibility(View.INVISIBLE);
                 bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
-                createPlayer((String) msg.obj);
+                createPlayer((String)msg.obj);
             }
         }
     }

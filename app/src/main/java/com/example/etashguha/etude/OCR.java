@@ -70,22 +70,22 @@ public class OCR extends Thread{
         //this is where we can do all our manipulations. To start on the highlighting stuff, the key
         //method to use is getBoundingBox() on a block, line, or word, however we want to do it.
         //that returns a rectangle that you could just fill or something.
-        List<FirebaseVisionDocumentText.Block> blocks = text.getBlocks();
-        int maxHeight = 0;
-        FirebaseVisionDocumentText.Block maxBlock = null;
-        for(FirebaseVisionDocumentText.Block block: blocks) {
-            if (block.getBoundingBox().height() > maxHeight) {
-                maxBlock = block;
-                maxHeight = block.getBoundingBox().height();
-            }
-        }
+//        List<FirebaseVisionDocumentText.Block> blocks = text.getBlocks();
+//        int maxHeight = 0;
+//        FirebaseVisionDocumentText.Block maxBlock = null;
+//        for(FirebaseVisionDocumentText.Block block: blocks) {
+//            if (block.getBoundingBox().height() > maxHeight) {
+//                maxBlock = block;
+//                maxHeight = block.getBoundingBox().height();
+//            }
+        //}
         //here we get the text from the block (could have also been paragraph, line, or word) and set
         //it as a message and send it to the TTS
-        String outputstring = maxBlock.getText();
+        //String outputstring = maxBlock.getText();
         Message msg = new Message();
         msg.what = pageNumber;
 
-        msg.obj = outputstring;
+        msg.obj = text;
         ocrHandler.sendMessage(msg);
     }
     @Override
