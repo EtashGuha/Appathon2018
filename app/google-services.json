@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "492813064787",
+    "firebase_url": "https://etude-221505.firebaseio.com",
+    "project_id": "etude-221505",
+    "storage_bucket": "etude-221505.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:492813064787:android:3a4d0875ee4e025c",
+        "android_client_info": {
+          "package_name": "com.example.etashguha.etude"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "492813064787-8dbc10ae39pt4ljv6oh6gnn8mjgli6mt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGg1Wv4Y9G_8EwHseBcTtrjNjn6nUoMao"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
