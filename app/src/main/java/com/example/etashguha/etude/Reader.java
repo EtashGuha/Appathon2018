@@ -3,6 +3,7 @@ package com.example.etashguha.etude;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.PointF;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,6 +17,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.github.barteksc.pdfviewer.PDFView;
 import com.google.firebase.ml.vision.document.FirebaseVisionDocumentText;
@@ -32,6 +34,7 @@ public class Reader extends AppCompatActivity {
     PausePlay pausePlayState = PausePlay.PAUSED;
     int pageNumber = 0;
     Screenshot screenshot;
+    boolean readyToDefine;
     boolean firstTimePlaying;
     Reader.SSHandler ssHandler;
     Player player;
@@ -39,7 +42,9 @@ public class Reader extends AppCompatActivity {
     ProgressBar progBar;
     HashMap<String,String> coodinatesToWord;
     KDTree coordinates;
+    TextView txt;
     Activity baseActivity;
+    int yOffset;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -47,6 +52,8 @@ public class Reader extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.reader);
 
+        yOffset = getStatusBarHeight();
+        readyToDefine = false;
         baseActivity = this;
         player = new Player("");
         final Uri uri = getIntent().getData();
@@ -56,20 +63,8 @@ public class Reader extends AppCompatActivity {
         firstTimePlaying = true;
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
-        pdfView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                int x = (int)event.getX();
-                int y = (int)event.getY();
-                double [] coordinate = new double [2];
-                coordinate[0] = x;
-                coordinate[1] = y;
-                KDNode nearestWord = coordinates.find_nearest(coordinate);
-                String key = (int)nearestWord.x[0] + " " + (int)nearestWord.x[1];
-                return false;
-            }
-        });
         pdfView.fromUri(uri).pages(pageNumber).load();
+        txt = findViewById(R.id.textView);
         bottomNavigationView = findViewById(R.id.bottomNavigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -110,6 +105,17 @@ public class Reader extends AppCompatActivity {
                 return false;
             }
         });
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if(ev.getAction() == MotionEvent.ACTION_DOWN && readyToDefine) {
+            String text = "You click at x = " + ev.getX() + " and y = " + ev.getY();
+            KDNode nearest = coordinates.find_nearest(new double[]{ev.getRawX(), ev.getRawY() - yOffset});
+            String key = (int)nearest.x[0] + " " + (int)nearest.x[1];
+            txt.setText(coodinatesToWord.get(key));
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     public void sideButtonReset(){
@@ -196,10 +202,14 @@ public class Reader extends AppCompatActivity {
                     String key = xValues.get(i) + " " + yValues.get(i);
                     coodinatesToWord.put(key, words.get(i).getText());
                     coordinates.add(coordinate);
+                    if(words.get(i).getText().equalsIgnoreCase("Compact")){
+                        txt.setText(key);
+                    }
                     Log.d("banana", key + " " + words.get(i).getText());
                 }
 
                 progBar.setVisibility(View.INVISIBLE);
+                readyToDefine = true;
             }
         }
     }
@@ -218,5 +228,14 @@ public class Reader extends AppCompatActivity {
                 createPlayer((String)msg.obj);
             }
         }
+    }
+
+    public int getStatusBarHeight() {
+        int result = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = getResources().getDimensionPixelSize(resourceId);
+        }
+        return result;
     }
 }
