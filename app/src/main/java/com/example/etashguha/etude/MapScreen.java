@@ -11,18 +11,21 @@ import java.util.List;
 public class MapScreen extends Thread {
 
     FirebaseVisionDocumentText text;
-    Reader.MapScreenHandler mapScreenHandler;
+    Reader.CoordinatesHandler coordinatesHandler;
+    Reader.CoordinatesToWordHandler coordinatesToWordHandler;
     int pageNumber;
 
-    public MapScreen(FirebaseVisionDocumentText text, Reader.MapScreenHandler mapScreenHandler, int pageNumber){
+    public MapScreen(FirebaseVisionDocumentText text, Reader.CoordinatesHandler coordinatesHandler, Reader.CoordinatesToWordHandler coordinatesToWordHandler, int pageNumber){
         this.text = text;
-        this.mapScreenHandler = mapScreenHandler;
+        this.coordinatesHandler = coordinatesHandler;
+        this.coordinatesToWordHandler = coordinatesToWordHandler;
         this.pageNumber = pageNumber;
     }
 
     @Override
     public void run() {
-        Message msg = new Message();
+        Message coordinatesMsg = new Message();
+        Message coordinatesToWordMsg = new Message();
         ArrayList<FirebaseVisionDocumentText.Word> words = new ArrayList<>();
         ArrayList<Integer> xValues = new ArrayList<>();
         ArrayList<Integer> yValues = new ArrayList<>();
@@ -48,11 +51,9 @@ public class MapScreen extends Thread {
             coordinates.add(coordinate);
         }
 
-        msg.obj = coordinates;
-        msg.what = 0;
-        mapScreenHandler.sendMessage(msg);
-        msg.obj = coordinatesToWord;
-        msg.what = 1;
-        mapScreenHandler.sendMessage(msg);
+        coordinatesMsg.obj = coordinates;
+        coordinatesHandler.sendMessage(coordinatesMsg);
+        coordinatesToWordMsg.obj = coordinatesToWord;
+        coordinatesToWordHandler.sendMessage(coordinatesToWordMsg);
     }
 }

@@ -10,6 +10,7 @@ import android.os.Message;
 import android.os.StrictMode;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -28,7 +29,8 @@ public class Reader extends AppCompatActivity {
     PausePlay pausePlayState = PausePlay.PAUSED;
     int pageNumber, yOffset;
     Screenshot screenshot;
-    boolean readyToDefine, coordinatesUpdated, coordinatesToWordUpdated, firstTimePlaying;
+    double x,y;
+    boolean coordinatesUpdated, coordinatesToWordUpdated, firstTimePlaying, timeToDefine;
     Reader.SSHandler ssHandler;
     Player player;
     BottomNavigationView bottomNavigationView;
@@ -36,6 +38,7 @@ public class Reader extends AppCompatActivity {
     public HashMap<String,String> coordinatesToWord;
     public KDTree coordinates;
     TextView txt;
+    FloatingActionButton defineWord;
     Activity baseActivity;
 
     @SuppressLint("ClickableViewAccessibility")
@@ -45,13 +48,14 @@ public class Reader extends AppCompatActivity {
         setContentView(R.layout.reader);
         yOffset = getStatusBarHeight();
         pageNumber = 0;
-        readyToDefine = false;
         baseActivity = this;
         coordinatesUpdated = false;
         coordinatesToWordUpdated = false;
+        timeToDefine = false;
         player = new Player("");
         final Uri uri = getIntent().getData();
         pdfView = findViewById(R.id.pdfView);
+        defineWord = findViewById(R.id.defineButton);
         progBar = findViewById(R.id.progressBar);
         progBar.setVisibility(View.INVISIBLE);
         firstTimePlaying = true;
@@ -59,6 +63,13 @@ public class Reader extends AppCompatActivity {
         StrictMode.setVmPolicy(builder.build());
         pdfView.fromUri(uri).pages(pageNumber).load();
         txt = findViewById(R.id.textView);
+
+        defineWord.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                timeToDefine = true;
+            }
+        });
         bottomNavigationView = findViewById(R.id.bottomNavigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -99,14 +110,18 @@ public class Reader extends AppCompatActivity {
                 return false;
             }
         });
+
     }
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        if(ev.getAction() == MotionEvent.ACTION_DOWN && readyToDefine) {
-            KDNode nearest = coordinates.find_nearest(new double[]{ev.getRawX(), ev.getRawY() - getStatusBarHeight()});
-            String key = (int)nearest.x[0] + " " + (int)nearest.x[1];
-            txt.setText(coordinatesToWord.get(key));
+        if(ev.getRawY() < bottomNavigationView.getY() && timeToDefine && (ev.getRawY() < defineWord.getY() || ev.getRawX() < defineWord.getX())){
+            timeToDefine = false;
+            y = ev.getRawY() - getStatusBarHeight();
+            x = ev.getRawX();
+            ssHandler = new SSHandler(Purpose.DEFINE);
+            screenshot = new Screenshot(baseActivity, ssHandler, pageNumber);
+            screenshot.run();
         }
         return super.dispatchTouchEvent(ev);
     }
@@ -154,14 +169,16 @@ public class Reader extends AppCompatActivity {
     public class OCRHandler extends Handler {
 
         ReadyTTSHandler readyTTSHandler;
-        MapScreenHandler mapScreenHandler;
+        CoordinatesHandler coordinatesHandler;
+        CoordinatesToWordHandler coordinatesToWordHandler;
         Purpose purpose;
 
         public OCRHandler(Purpose purpose) {
             super();
             this.purpose = purpose;
             readyTTSHandler = new ReadyTTSHandler();
-            mapScreenHandler = new MapScreenHandler();
+            coordinatesHandler = new CoordinatesHandler();
+            coordinatesToWordHandler = new CoordinatesToWordHandler();
         }
 
         @Override
@@ -173,7 +190,7 @@ public class Reader extends AppCompatActivity {
                         readyTTS.start();
                         break;
                     case DEFINE:
-                        MapScreen mapScreen = new MapScreen((FirebaseVisionDocumentText) msg.obj, mapScreenHandler, msg.what);
+                        MapScreen mapScreen = new MapScreen((FirebaseVisionDocumentText) msg.obj, coordinatesHandler, coordinatesToWordHandler, msg.what);
                         mapScreen.start();
                         break;
                     default:
@@ -217,24 +234,43 @@ public class Reader extends AppCompatActivity {
         }
     }
 
-    public class MapScreenHandler extends Handler{
+    public class CoordinatesToWordHandler extends Handler {
 
-        public MapScreenHandler(){
+        public CoordinatesToWordHandler() {
             super();
         }
 
         @Override
         public void handleMessage(Message msg) {
-            if(msg.what == 0){
-                coordinates = (KDTree)msg.obj;
-                coordinatesUpdated = true;
-            } else {
-                coordinatesToWord = (HashMap<String,String>)(msg.obj);
-                coordinatesToWordUpdated = true;
-            }
+            coordinatesToWord = (HashMap<String, String>) (msg.obj);
+            coordinatesToWordUpdated = true;
 
-            if(coordinatesUpdated && coordinatesToWordUpdated){
-                readyToDefine = true;
+            if (coordinatesUpdated && coordinatesToWordUpdated) {
+                KDNode nearest = coordinates.find_nearest(new double[]{x, y});
+                String key = (int) nearest.x[0] + " " + (int) nearest.x[1];
+                txt.setText(coordinatesToWord.get(key));
+                timeToDefine = false;
+            }
+        }
+    }
+
+
+    public class CoordinatesHandler extends Handler{
+
+        public CoordinatesHandler(){
+            super();
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            coordinates = (KDTree)msg.obj;
+            coordinatesUpdated = true;
+
+            if (coordinatesUpdated && coordinatesToWordUpdated) {
+                KDNode nearest = coordinates.find_nearest(new double[]{x, y});
+                String key = (int) nearest.x[0] + " " + (int) nearest.x[1];
+                txt.setText(coordinatesToWord.get(key));
+                timeToDefine = false;
             }
         }
     }
