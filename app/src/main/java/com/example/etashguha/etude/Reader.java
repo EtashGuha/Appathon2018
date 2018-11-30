@@ -35,13 +35,15 @@ public class Reader extends AppCompatActivity {
     int pageNumber = 0;
     Screenshot screenshot;
     boolean readyToDefine;
+    boolean coordinatesUpdated;
+    boolean coordinatesToWordUpdated;
     boolean firstTimePlaying;
     Reader.SSHandler ssHandler;
     Player player;
     BottomNavigationView bottomNavigationView;
     ProgressBar progBar;
-    HashMap<String,String> coodinatesToWord;
-    KDTree coordinates;
+    public HashMap<String,String> coordinatesToWord;
+    public KDTree coordinates;
     TextView txt;
     Activity baseActivity;
     int yOffset;
@@ -51,10 +53,11 @@ public class Reader extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.reader);
-
         yOffset = getStatusBarHeight();
         readyToDefine = false;
         baseActivity = this;
+        coordinatesUpdated = false;
+        coordinatesToWordUpdated = false;
         player = new Player("");
         final Uri uri = getIntent().getData();
         pdfView = findViewById(R.id.pdfView);
@@ -84,7 +87,7 @@ public class Reader extends AppCompatActivity {
                             item.setIcon(R.drawable.pause_image);
                             firstTimePlaying = false;
                             pausePlayState = PausePlay.PLAYING;
-                            ssHandler = new SSHandler();
+                            ssHandler = new SSHandler(Purpose.PLAY);
                             screenshot = new Screenshot(baseActivity, ssHandler, pageNumber);
                             screenshot.run();
                         } else if(pausePlayState == PausePlay.PLAYING) {
@@ -110,10 +113,9 @@ public class Reader extends AppCompatActivity {
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if(ev.getAction() == MotionEvent.ACTION_DOWN && readyToDefine) {
-            String text = "You click at x = " + ev.getX() + " and y = " + ev.getY();
-            KDNode nearest = coordinates.find_nearest(new double[]{ev.getRawX(), ev.getRawY() - yOffset});
+            KDNode nearest = coordinates.find_nearest(new double[]{ev.getRawX(), ev.getRawY() - getStatusBarHeight()});
             String key = (int)nearest.x[0] + " " + (int)nearest.x[1];
-            txt.setText(coodinatesToWord.get(key));
+            txt.setText(coordinatesToWord.get(key));
         }
         return super.dispatchTouchEvent(ev);
     }
@@ -131,6 +133,10 @@ public class Reader extends AppCompatActivity {
         PAUSED, PLAYING
     }
 
+    public enum Purpose{
+        DEFINE, PLAY;
+    }
+
     public void createPlayer(String outputstring){
         player = new Player(outputstring);
         player.startSpeaking();
@@ -140,10 +146,9 @@ public class Reader extends AppCompatActivity {
 
         Reader.OCRHandler ocrHandler;
         OCR ocr;
-
-        public SSHandler(){
+        public SSHandler(Purpose purpose){
             super();
-            ocrHandler = new Reader.OCRHandler();
+            ocrHandler = new Reader.OCRHandler(purpose);
         }
 
         @Override
@@ -155,61 +160,52 @@ public class Reader extends AppCompatActivity {
         }
     }
 
-    public class OCRHandler extends Handler{
+    public class OCRHandler extends Handler {
 
-        TTS tts;
-        Reader.TTSHandler ttsHandler;
+        ReadyTTSHandler readyTTSHandler;
+        MapScreenHandler mapScreenHandler;
+        Purpose purpose;
 
-        public OCRHandler() {
+        public OCRHandler(Purpose purpose) {
             super();
-            ttsHandler = new Reader.TTSHandler();
+            this.purpose = purpose;
+            readyTTSHandler = new ReadyTTSHandler();
+            mapScreenHandler = new MapScreenHandler();
         }
 
         @Override
         public void handleMessage(Message msg) {
-            if(msg.what == pageNumber) {
-                coodinatesToWord = new HashMap<>();
-                List<FirebaseVisionDocumentText.Block> blocks = ((FirebaseVisionDocumentText)msg.obj).getBlocks();
-                ArrayList<FirebaseVisionDocumentText.Word> words = new ArrayList<FirebaseVisionDocumentText.Word>();
-                ArrayList<Integer> xValues = new ArrayList<>();
-                ArrayList<Integer> yValues = new ArrayList<>();
-                int maxHeight = 0;
-                FirebaseVisionDocumentText.Block maxBlock = null;
-                for(FirebaseVisionDocumentText.Block block: blocks) {
-                    if (block.getBoundingBox().height() > maxHeight) {
-                        maxBlock = block;
-                        maxHeight = block.getBoundingBox().height();
-                    }
+            if (msg.what == pageNumber) {
+                switch (purpose) {
+                    case PLAY:
+                        ReadyTTS readyTTS = new ReadyTTS((FirebaseVisionDocumentText) msg.obj, readyTTSHandler, msg.what);
+                        readyTTS.start();
+                        break;
+                    case DEFINE:
+                        MapScreen mapScreen = new MapScreen((FirebaseVisionDocumentText) msg.obj, mapScreenHandler, msg.what);
+                        mapScreen.start();
+                        break;
+                    default:
+                        break;
                 }
-                String outputstring = maxBlock.getText();
-                tts = new TTS(ttsHandler, outputstring, msg.what);
+            }
+        }
+    }
+
+    public class ReadyTTSHandler extends Handler{
+
+        TTSHandler ttsHandler;
+
+        public ReadyTTSHandler(){
+            super();
+            ttsHandler = new TTSHandler();
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            if(msg.what == pageNumber){
+                TTS tts = new TTS(ttsHandler, (String)msg.obj, msg.what);
                 tts.start();
-
-                for(int blockIndex = 0; blockIndex < blocks.size(); blockIndex++){
-                    for(int paragraphIndex = 0; paragraphIndex < blocks.get(blockIndex).getParagraphs().size(); paragraphIndex++){
-                        for(int wordIndex = 0; wordIndex < blocks.get(blockIndex).getParagraphs().get(paragraphIndex).getWords().size(); wordIndex++){
-                            xValues.add(blocks.get(blockIndex).getParagraphs().get(paragraphIndex).getWords().get(wordIndex).getBoundingBox().centerX());
-                            yValues.add(blocks.get(blockIndex).getParagraphs().get(paragraphIndex).getWords().get(wordIndex).getBoundingBox().centerY());
-                            words.add(blocks.get(blockIndex).getParagraphs().get(paragraphIndex).getWords().get(wordIndex));
-                        }
-                    }
-                }
-                coordinates = new KDTree(words.size());
-                for(int i = 0; i < words.size(); i++){
-                    double [] coordinate = new double[2];
-                    coordinate[0] = xValues.get(i);
-                    coordinate[1] = yValues.get(i);
-                    String key = xValues.get(i) + " " + yValues.get(i);
-                    coodinatesToWord.put(key, words.get(i).getText());
-                    coordinates.add(coordinate);
-                    if(words.get(i).getText().equalsIgnoreCase("Compact")){
-                        txt.setText(key);
-                    }
-                    Log.d("banana", key + " " + words.get(i).getText());
-                }
-
-                progBar.setVisibility(View.INVISIBLE);
-                readyToDefine = true;
             }
         }
     }
@@ -226,6 +222,28 @@ public class Reader extends AppCompatActivity {
                 progBar.setVisibility(View.INVISIBLE);
                 bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
                 createPlayer((String)msg.obj);
+            }
+        }
+    }
+
+    public class MapScreenHandler extends Handler{
+
+        public MapScreenHandler(){
+            super();
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            if(msg.what == 0){
+                coordinates = (KDTree)msg.obj;
+                coordinatesUpdated = true;
+            } else {
+                coordinatesToWord = (HashMap<String,String>)(msg.obj);
+                coordinatesToWordUpdated = true;
+            }
+
+            if(coordinatesUpdated && coordinatesToWordUpdated){
+                readyToDefine = true;
             }
         }
     }
