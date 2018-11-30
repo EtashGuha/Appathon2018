@@ -3,7 +3,6 @@ package com.example.etashguha.etude;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.PointF;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -12,7 +11,6 @@ import android.os.StrictMode;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,22 +20,15 @@ import android.widget.TextView;
 import com.github.barteksc.pdfviewer.PDFView;
 import com.google.firebase.ml.vision.document.FirebaseVisionDocumentText;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 
 public class Reader extends AppCompatActivity {
 
     PDFView pdfView;
     PausePlay pausePlayState = PausePlay.PAUSED;
-    int pageNumber = 0;
+    int pageNumber, yOffset;
     Screenshot screenshot;
-    boolean readyToDefine;
-    boolean coordinatesUpdated;
-    boolean coordinatesToWordUpdated;
-    boolean firstTimePlaying;
+    boolean readyToDefine, coordinatesUpdated, coordinatesToWordUpdated, firstTimePlaying;
     Reader.SSHandler ssHandler;
     Player player;
     BottomNavigationView bottomNavigationView;
@@ -46,7 +37,6 @@ public class Reader extends AppCompatActivity {
     public KDTree coordinates;
     TextView txt;
     Activity baseActivity;
-    int yOffset;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -54,6 +44,7 @@ public class Reader extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.reader);
         yOffset = getStatusBarHeight();
+        pageNumber = 0;
         readyToDefine = false;
         baseActivity = this;
         coordinatesUpdated = false;
@@ -137,8 +128,8 @@ public class Reader extends AppCompatActivity {
         DEFINE, PLAY;
     }
 
-    public void createPlayer(String outputstring){
-        player = new Player(outputstring);
+    public void createPlayer(String outputString){
+        player = new Player(outputString);
         player.startSpeaking();
     }
 
