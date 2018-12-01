@@ -16,7 +16,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 
 import com.github.barteksc.pdfviewer.PDFView;
 import com.google.firebase.ml.vision.document.FirebaseVisionDocumentText;
@@ -25,19 +24,18 @@ import java.util.HashMap;
 
 public class Reader extends AppCompatActivity {
 
-    PDFView pdfView;
-    PausePlay pausePlayState = PausePlay.PAUSED;
-    int pageNumber, yOffset;
-    Screenshot screenshot;
+    int pageNumber;
     double x,y;
     boolean coordinatesUpdated, coordinatesToWordUpdated, firstTimePlaying, timeToDefine;
+    public HashMap<String,String> coordinatesToWord;
+    public KDTree coordinates;
+    PDFView pdfView;
+    PausePlay pausePlayState = PausePlay.PAUSED;
+    Screenshot screenshot;
     Reader.SSHandler ssHandler;
     Player player;
     BottomNavigationView bottomNavigationView;
     ProgressBar progBar;
-    public HashMap<String,String> coordinatesToWord;
-    public KDTree coordinates;
-    TextView txt;
     FloatingActionButton defineWord;
     Activity baseActivity;
 
@@ -46,23 +44,25 @@ public class Reader extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.reader);
-        yOffset = getStatusBarHeight();
+
         pageNumber = 0;
         baseActivity = this;
         coordinatesUpdated = false;
         coordinatesToWordUpdated = false;
         timeToDefine = false;
         player = new Player("");
-        final Uri uri = getIntent().getData();
         pdfView = findViewById(R.id.pdfView);
         defineWord = findViewById(R.id.defineButton);
         progBar = findViewById(R.id.progressBar);
         progBar.setVisibility(View.INVISIBLE);
         firstTimePlaying = true;
+
+        final Uri uri = getIntent().getData();
+
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
+
         pdfView.fromUri(uri).pages(pageNumber).load();
-        txt = findViewById(R.id.textView);
 
         defineWord.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -70,6 +70,7 @@ public class Reader extends AppCompatActivity {
                 timeToDefine = true;
             }
         });
+
         bottomNavigationView = findViewById(R.id.bottomNavigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -246,10 +247,7 @@ public class Reader extends AppCompatActivity {
             coordinatesToWordUpdated = true;
 
             if (coordinatesUpdated && coordinatesToWordUpdated) {
-                KDNode nearest = coordinates.find_nearest(new double[]{x, y});
-                String key = (int) nearest.x[0] + " " + (int) nearest.x[1];
-                txt.setText(coordinatesToWord.get(key));
-                timeToDefine = false;
+                findWord();
             }
         }
     }
@@ -267,12 +265,15 @@ public class Reader extends AppCompatActivity {
             coordinatesUpdated = true;
 
             if (coordinatesUpdated && coordinatesToWordUpdated) {
-                KDNode nearest = coordinates.find_nearest(new double[]{x, y});
-                String key = (int) nearest.x[0] + " " + (int) nearest.x[1];
-                txt.setText(coordinatesToWord.get(key));
-                timeToDefine = false;
+                findWord();
             }
         }
+    }
+
+    public void findWord(){
+        KDNode nearest = coordinates.find_nearest(new double[]{x, y});
+        String key = (int) nearest.x[0] + " " + (int) nearest.x[1];
+        timeToDefine = false;
     }
 
     public int getStatusBarHeight() {
