@@ -15,7 +15,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="0dp">
+        tools:layout_editor_absoluteY="495dp">
 
         <ProgressBar
             android:id="@+id/progressBar"
@@ -24,12 +24,38 @@
             android:layout_height="109dp"
             android:layout_centerInParent="true"
             android:indeterminateTint="@color/toolbarIconColor" />
+
+
     </com.github.barteksc.pdfviewer.PDFView>
+
 
     <FrameLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        tools:layout_editor_absoluteX="0dp">
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="495dp">
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom">
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/defineButton"
+                style="@style/Widget.MaterialComponents.FloatingActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_marginBottom="160dp"
+                android:layout_marginLeft="344dp"
+                android:layout_marginStart="344dp"
+                android:src="@android:drawable/ic_search_category_default"
+                android:tint="@color/toolbarIconColor"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
+
+        </RelativeLayout>
 
         <RelativeLayout
             android:layout_width="wrap_content"
@@ -60,8 +86,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            app:behavior_peekHeight="0dp"
             android:fitsSystemWindows="true"
+            app:behavior_peekHeight="0dp"
             tools:layout_editor_absoluteX="0dp">
 
             <FrameLayout
@@ -70,9 +96,9 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
                 android:background="@color/colorPrimaryDark"
-                app:layout_behavior="android.support.design.widget.BottomSheetBehavior"
                 app:behavior_hideable="true"
-                app:behavior_peekHeight="0dp">
+                app:behavior_peekHeight="0dp"
+                app:layout_behavior="android.support.design.widget.BottomSheetBehavior">
 
                 <LinearLayout
                     android:layout_width="match_parent"
