@@ -9,13 +9,18 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.StrictMode;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.github.barteksc.pdfviewer.PDFView;
 import com.google.firebase.ml.vision.document.FirebaseVisionDocumentText;
@@ -24,7 +29,6 @@ import java.util.HashMap;
 
 public class Reader extends AppCompatActivity {
 
-    int pageNumber;
     double x,y;
     boolean coordinatesUpdated, coordinatesToWordUpdated, firstTimePlaying, timeToDefine;
     public HashMap<String,String> coordinatesToWord;
@@ -33,11 +37,18 @@ public class Reader extends AppCompatActivity {
     PausePlay pausePlayState = PausePlay.PAUSED;
     Screenshot screenshot;
     Reader.SSHandler ssHandler;
+    int pageNumber;
+    DictionaryHandler dictionaryHandler;
     Player player;
     BottomNavigationView bottomNavigationView;
     ProgressBar progBar;
     FloatingActionButton defineWord;
     Activity baseActivity;
+    TextView definition;
+    ConstraintLayout baseLayout;
+    BottomSheetBehavior behavior;
+    CoordinatorLayout coordinatorLayout;
+    View bottomSheet;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -45,22 +56,59 @@ public class Reader extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.reader);
 
+
         pageNumber = 0;
         baseActivity = this;
         coordinatesUpdated = false;
         coordinatesToWordUpdated = false;
         timeToDefine = false;
         player = new Player("");
+
         pdfView = findViewById(R.id.pdfView);
         defineWord = findViewById(R.id.defineButton);
         progBar = findViewById(R.id.progressBar);
+        definition = findViewById(R.id.definition);
         progBar.setVisibility(View.INVISIBLE);
+        coordinatorLayout = findViewById(R.id.main_content);
+        bottomSheet = coordinatorLayout.findViewById(R.id.bottom_sheet);
+        baseLayout = findViewById(R.id.container);
+
+        baseActivity = this;
+        player = new Player("");
         firstTimePlaying = true;
 
         final Uri uri = getIntent().getData();
 
+        dictionaryHandler = new DictionaryHandler();
+        pausePlayState = PausePlay.PAUSED;
+
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
+
+        behavior = BottomSheetBehavior.from(bottomSheet);
+        behavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+            @Override
+            public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                // React to state change
+                Log.e("onStateChanged", "onStateChanged:" + newState);
+            }
+            @Override
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+                // React to dragging events
+                Log.e("onSlide", "onSlide");
+            }
+        });
+
+        baseLayout.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                Log.d("coordinates", event.getX() + " " + event.getY());
+                return false;
+            }
+        });
+
+        behavior.setPeekHeight(0);
+        behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
 
         pdfView.fromUri(uri).pages(pageNumber).load();
 
@@ -71,6 +119,7 @@ public class Reader extends AppCompatActivity {
             }
         });
 
+        dictionaryHandler = new DictionaryHandler();
         bottomNavigationView = findViewById(R.id.bottomNavigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -235,6 +284,7 @@ public class Reader extends AppCompatActivity {
         }
     }
 
+
     public class CoordinatesToWordHandler extends Handler {
 
         public CoordinatesToWordHandler() {
@@ -273,7 +323,8 @@ public class Reader extends AppCompatActivity {
     public void findWord(){
         KDNode nearest = coordinates.find_nearest(new double[]{x, y});
         String key = (int) nearest.x[0] + " " + (int) nearest.x[1];
-        timeToDefine = false;
+        Dictionary dictionary = new Dictionary(baseActivity, dictionaryHandler,coordinatesToWord.get(key));
+        dictionary.start();
     }
 
     public int getStatusBarHeight() {
@@ -283,5 +334,27 @@ public class Reader extends AppCompatActivity {
             result = getResources().getDimensionPixelSize(resourceId);
         }
         return result;
+    }
+
+    public class DictionaryHandler extends Handler{
+
+        public DictionaryHandler() {
+            super();
+        }
+        @SuppressLint("SetTextI18n")
+        @Override
+        public void handleMessage(Message msg) {
+            String response = (String)msg.obj;
+            String word = response.substring(response.indexOf("\"word\":\"") + 8 , response.indexOf("\"definition\":\"") - 18);
+            String definitionString = response.substring(response.indexOf("\"definition\":\"") + 14, response.indexOf("\",\"partOfSpeech"));
+            definition.setText(capitalize(word) + " - " + definitionString);
+
+            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+        }
+    }
+
+    public String capitalize(String str){
+        String cap = str.substring(0, 1).toUpperCase() + str.substring(1);
+        return cap;
     }
 }
