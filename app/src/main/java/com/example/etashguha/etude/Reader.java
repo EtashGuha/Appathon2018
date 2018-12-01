@@ -30,7 +30,7 @@ import java.util.HashMap;
 public class Reader extends AppCompatActivity {
 
     double x,y;
-    boolean coordinatesUpdated, coordinatesToWordUpdated, firstTimePlaying, timeToDefine;
+    boolean coordinatesUpdated, coordinatesToWordUpdated, firstTimePlaying, timeToDefine, isDefining, isPlaying;
     public HashMap<String,String> coordinatesToWord;
     public KDTree coordinates;
     PDFView pdfView;
@@ -63,6 +63,8 @@ public class Reader extends AppCompatActivity {
         coordinatesToWordUpdated = false;
         timeToDefine = false;
         player = new Player("");
+        isDefining = false;
+        isPlaying = false;
 
         pdfView = findViewById(R.id.pdfView);
         defineWord = findViewById(R.id.defineButton);
@@ -142,6 +144,7 @@ public class Reader extends AppCompatActivity {
                             ssHandler = new SSHandler(Purpose.PLAY);
                             screenshot = new Screenshot(baseActivity, ssHandler, pageNumber);
                             screenshot.run();
+                            isPlaying = true;
                         } else if(pausePlayState == PausePlay.PLAYING) {
                             item.setIcon(R.drawable.playbutton);
                             pausePlayState = PausePlay.PAUSED;
@@ -166,7 +169,9 @@ public class Reader extends AppCompatActivity {
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if(ev.getRawY() < bottomNavigationView.getY() && timeToDefine && (ev.getRawY() < defineWord.getY() || ev.getRawX() < defineWord.getX())){
+            isDefining = true;
             timeToDefine = false;
+            progBar.setVisibility(View.VISIBLE);
             y = ev.getRawY() - getStatusBarHeight();
             x = ev.getRawX();
             ssHandler = new SSHandler(Purpose.DEFINE);
@@ -182,6 +187,7 @@ public class Reader extends AppCompatActivity {
         firstTimePlaying = true;
         pausePlayState = PausePlay.PAUSED;
         progBar.setVisibility(View.INVISIBLE);
+        isPlaying = false;
         bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
     }
 
@@ -277,7 +283,10 @@ public class Reader extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg){
             if(msg.what == pageNumber) {
-                progBar.setVisibility(View.INVISIBLE);
+                isPlaying = false;
+                if(!isDefining) {
+                    progBar.setVisibility(View.INVISIBLE);
+                }
                 bottomNavigationView.getMenu().findItem(R.id.play_pause_button).setEnabled(true);
                 createPlayer((String)msg.obj);
             }
@@ -298,6 +307,10 @@ public class Reader extends AppCompatActivity {
 
             if (coordinatesUpdated && coordinatesToWordUpdated) {
                 findWord();
+                if(!isPlaying) {
+                    progBar.setVisibility(View.INVISIBLE);
+                }
+                isDefining = false;
             }
         }
     }

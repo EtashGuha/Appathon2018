@@ -32,30 +32,9 @@
     <FrameLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="495dp">
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:layout_editor_absoluteX="0dp">
 
-        <RelativeLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom">
-
-            <android.support.design.widget.FloatingActionButton
-                android:id="@+id/defineButton"
-                style="@style/Widget.MaterialComponents.FloatingActionButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|end"
-                android:layout_marginBottom="160dp"
-                android:layout_marginLeft="344dp"
-                android:layout_marginStart="344dp"
-                android:src="@android:drawable/ic_search_category_default"
-                android:tint="@color/toolbarIconColor"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent" />
-
-        </RelativeLayout>
 
         <RelativeLayout
             android:layout_width="wrap_content"
@@ -80,6 +59,26 @@
             </android.support.design.widget.BottomNavigationView>
         </RelativeLayout>
 
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="163dp"
+            android:layout_gravity="bottom">
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/defineButton"
+                style="@style/Widget.MaterialComponents.FloatingActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_marginLeft="300dp"
+                android:layout_marginStart="300dp"
+                android:src="@android:drawable/ic_search_category_default"
+                android:tint="@color/toolbarIconColor"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
+
+        </RelativeLayout>
 
         <android.support.design.widget.CoordinatorLayout
             android:id="@+id/main_content"
