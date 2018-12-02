@@ -2,6 +2,7 @@ package com.example.etashguha.etude;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -23,6 +24,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.github.barteksc.pdfviewer.PDFView;
+import com.google.firebase.internal.api.FirebaseNoSignedInUserException;
 import com.google.firebase.ml.vision.document.FirebaseVisionDocumentText;
 
 import java.util.HashMap;
@@ -30,7 +32,7 @@ import java.util.HashMap;
 public class Reader extends AppCompatActivity {
 
     double x,y;
-    boolean coordinatesUpdated, coordinatesToWordUpdated, firstTimePlaying, timeToDefine, isDefining, isPlaying;
+    boolean coordinatesUpdated, coordinatesToWordUpdated, firstTimePlaying, timeToDefine, isDefining, isPlaying, isSummarizing;
     public HashMap<String,String> coordinatesToWord;
     public KDTree coordinates;
     PDFView pdfView;
@@ -42,7 +44,7 @@ public class Reader extends AppCompatActivity {
     Player player;
     BottomNavigationView bottomNavigationView;
     ProgressBar progBar;
-    FloatingActionButton defineWord;
+    FloatingActionButton defineWord, summarizeText;
     Activity baseActivity;
     TextView definition;
     ConstraintLayout baseLayout;
@@ -74,6 +76,7 @@ public class Reader extends AppCompatActivity {
         coordinatorLayout = findViewById(R.id.main_content);
         bottomSheet = coordinatorLayout.findViewById(R.id.bottom_sheet);
         baseLayout = findViewById(R.id.container);
+        summarizeText = findViewById(R.id.summarizeButton);
 
         baseActivity = this;
         player = new Player("");
@@ -101,14 +104,6 @@ public class Reader extends AppCompatActivity {
             }
         });
 
-        baseLayout.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                Log.d("coordinates", event.getX() + " " + event.getY());
-                return false;
-            }
-        });
-
         behavior.setPeekHeight(0);
         behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
 
@@ -120,6 +115,18 @@ public class Reader extends AppCompatActivity {
                 timeToDefine = true;
             }
         });
+
+        summarizeText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ssHandler = new SSHandler(Purpose.SUMMARIZE);
+                screenshot = new Screenshot(baseActivity, ssHandler, pageNumber);
+                screenshot.run();
+                progBar.setVisibility(View.VISIBLE);
+                isSummarizing = true;
+            }
+        });
+
 
         dictionaryHandler = new DictionaryHandler();
         bottomNavigationView = findViewById(R.id.bottomNavigation);
@@ -196,7 +203,7 @@ public class Reader extends AppCompatActivity {
     }
 
     public enum Purpose{
-        DEFINE, PLAY;
+        DEFINE, PLAY, SUMMARIZE;
     }
 
     public void createPlayer(String outputString){
@@ -249,7 +256,12 @@ public class Reader extends AppCompatActivity {
                         MapScreen mapScreen = new MapScreen((FirebaseVisionDocumentText) msg.obj, coordinatesHandler, coordinatesToWordHandler, msg.what);
                         mapScreen.start();
                         break;
-                    default:
+                    case SUMMARIZE:
+                        Intent intent = new Intent(baseActivity, SummarizePage.class);
+                        progBar.setVisibility(View.INVISIBLE);
+                        isSummarizing = false;
+                        intent.putExtra("text", ((FirebaseVisionDocumentText)msg.obj).getText());
+                        startActivity(intent);
                         break;
                 }
             }

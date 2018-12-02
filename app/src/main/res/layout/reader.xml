@@ -61,7 +61,7 @@
 
         <RelativeLayout
             android:layout_width="wrap_content"
-            android:layout_height="163dp"
+            android:layout_height="128dp"
             android:layout_gravity="bottom">
 
             <android.support.design.widget.FloatingActionButton
@@ -69,10 +69,31 @@
                 style="@style/Widget.MaterialComponents.FloatingActionButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
                 android:layout_gravity="bottom|end"
-                android:layout_marginLeft="300dp"
-                android:layout_marginStart="300dp"
                 android:src="@android:drawable/ic_search_category_default"
+                android:tint="@color/toolbarIconColor"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="124dp"
+            android:layout_gravity="bottom">
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/summarizeButton"
+                style="@style/Widget.MaterialComponents.FloatingActionButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="bottom|start"
+                android:src="@drawable/ic_content_cut_black_24dp"
                 android:tint="@color/toolbarIconColor"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
